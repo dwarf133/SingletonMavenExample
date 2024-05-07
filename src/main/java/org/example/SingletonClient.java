@@ -8,6 +8,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Random;
 
 public class SingletonClient {
 
@@ -29,15 +31,16 @@ public class SingletonClient {
 
     private static LoginResponse login() throws JsonProcessingException {
 
+        // String encodedResponse = this.client.call( something )
         ObjectMapper mapper = new ObjectMapper();
-        LoginResponse response = mapper.readValue("{\"token\":\"dfsdfsdfsdfsdfsdfsdgsdfh\", \"expires_at\":\"2024-04-24T00:00:00\"}", LoginResponse.class);
+        LoginResponse response = mapper.readValue(SingletonClient.getTestData(Calendar.getInstance().getTime()), LoginResponse.class);
 
-        return response; //new LoginResponse("token", "sdsadas");
+        return response;
     }
 
     public static SingletonClient getInstance() throws ParseException, JsonProcessingException {
         if (SingletonClient.instance == null ||
-                SingletonClient.instance.expires_at.after(Calendar.getInstance().getTime())) {
+                SingletonClient.instance.expires_at.before(Calendar.getInstance().getTime())) {
             SingletonClient.instance = new SingletonClient();
         }
         return SingletonClient.instance;
@@ -45,5 +48,40 @@ public class SingletonClient {
 
     public String getExpiresAt() {
         return SingletonClient.dateFormatter.format(this.expires_at);
+    }
+    public String getInfoString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Token: ");
+        sb.append(this.token);
+        sb.append(" Expires at: ");
+        sb.append(this.getExpiresAt());
+        return sb.toString();
+    }
+
+    private static String getTestData(Date date) {
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+        int suff = random.nextInt();
+        String token = "ZnVja2loYXRlamF2YWZ1Y2s=" + Integer.toString(suff);
+        sb.append("{\"token\":\"");
+        sb.append(token);
+        sb.append("\", \"expires_at\":\"");
+
+        Calendar calendar = new GregorianCalendar();
+        calendar.setTime(date);
+        calendar.add(Calendar.SECOND, 5);
+        date = calendar.getTime();
+
+        sb.append(SingletonClient.dateFormatter.format(date));
+        sb.append("\"}");
+        return sb.toString();
+    }
+    public static void testSingletonClient(int iterations) throws ParseException, JsonProcessingException, InterruptedException {
+        System.out.println(SingletonClient.getInstance().getInfoString());
+        for (int i=0; i<iterations; i++) {
+            System.out.println(SingletonClient.getInstance().getInfoString());
+            Thread.sleep(1000);
+        }
+
     }
 }
